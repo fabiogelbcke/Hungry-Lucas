@@ -419,6 +419,8 @@ function scene:createScene( event )
 	fattySprite.myName="fatty"
 	group:insert( fattySprite )
 	coinsound = audio.loadSound( "smw_coin.wav")
+	swallowSound= audio.loadSound( "swallowing.mp3" )
+	fallingSound = audio.loadSound( "foodfalling.wav" )
 
 
 	function newCloud()
@@ -615,7 +617,7 @@ print("destroyScene")
 	barno = 1
 	direction = nil
 	timeSinceStart = nil
-	decreasedTime=nil
+	decreasedTime=0
 	counter=0
 	isRunning=nil
 	isStopping=nil
@@ -636,6 +638,7 @@ function saladCollision( event )
 			   
 				if event.object2.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 25, 20)
+					audio.play( fallingSound )
 					shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object1.x
 					shadow.y=ground.y-15
@@ -647,6 +650,7 @@ function saladCollision( event )
 				event.object1:removeSelf()
 			end
 			if(event.object2.myName=="fatty")then
+				audio.play( swallowSound)
 
 				if event.object1.tag==30 then
 					saladno = saladno+10
@@ -679,6 +683,7 @@ function saladCollision( event )
 			if (event.object1.myName == "fatty" or event.object1.myName =="ground") then
 				if event.object1.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 30, 20)
+					audio.play( fallingSound )
 					--shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object2.x
 					shadow.y=event.object1.y-10
@@ -694,6 +699,7 @@ function saladCollision( event )
 				end
 			end
 			if(event.object1.myName=="fatty")then
+				audio.play( swallowSound)
 			   if event.object2.tag==30 then
 					saladno = saladno+10
 					sizesalad = 1
@@ -765,6 +771,7 @@ local function foodCollision( event )
 				
 				if event.object2.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 25, 20)
+					audio.play( fallingSound )
 					shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object1.x
 					shadow.y=ground.y-15
@@ -776,6 +783,7 @@ local function foodCollision( event )
 				event.object1:removeSelf()
 			end
 			if(event.object2.myName=="fatty")then
+				audio.play( swallowSound)
 				if counter ~= 8 then
 					increaseMeter()
 				end
@@ -828,6 +836,7 @@ local function foodCollision( event )
 			if (event.object1.myName == "fatty" or event.object1.myName =="ground") then
 				if event.object1.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 30, 20)
+					audio.play( fallingSound )
 					--shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object2.x
 					shadow.y=event.object1.y-10
@@ -840,6 +849,7 @@ local function foodCollision( event )
 			    end
 			end
 			if(event.object1.myName=="fatty")then
+				audio.play( swallowSound)
 				if counter ~=8 then
 					increaseMeter()
 				end
