@@ -6,11 +6,37 @@
 
 local storyboard = require( "storyboard" )
 local scene = storyboard.newScene()
-local physics = require ("physics")
-physics.start()
 
 -- include Corona's "widget" library
 local widget = require "widget"
+
+local json = require("json")
+function saveTable(t, filename)
+    local path = system.pathForFile( filename, system.DocumentsDirectory)
+    local file = io.open(path, "w")
+    if file then
+        local contents = json.encode(t)
+        file:write( contents )
+        io.close( file )
+        return true
+    else
+        return false
+    end
+end
+function loadTable(filename)
+    local path = system.pathForFile( filename, system.DocumentsDirectory)
+    local contents = ""
+    local myTable = {}
+    local file = io.open( path, "r" )
+    if file then
+         -- read all contents of file into a string
+         local contents = file:read( "*a" )
+         myTable = json.decode(contents);
+         io.close( file )
+         return myTable 
+    end
+    return nil
+end
 
 --------------------------------------------
 
@@ -21,19 +47,29 @@ local playBtn
 local function onPlayBtnRelease()
 	
 	-- go to level1.lua scene
+	print ("play")
 	audio.fade( {backgroundlullaby, time =1500, volume = 0}  )
 	storyboard.gotoScene( "level1", "fade", 500 )
-	
 	return true	-- indicates successful touch
 end
 local function onScoreBtnRelease()
 	
 	-- go to level1.lua scene
-	audio.fade( {backgroundlullaby, time =1200, volume = 0.2}  )
+	local soundOptions = loadTable("soundOptions.json")
+    if soundOptions.isOn then sounaudio.fade( {backgroundlullaby, time =1200, volume = 0.2}  ) end
 	storyboard.gotoScene( "highscores", "fade", 500 )
 	
 	return true	-- indicates successful touch
 end
+
+local function onUpgradesBtnRelease()
+	local soundOptions = loadTable("soundOptions.json")
+    if soundOptions.isOn then audio.fade( {backgroundlullaby, time =1200, volume = 0.2}  ) end
+	storyboard.gotoScene( "upgrades", "fade", 500 )
+	return true
+end
+
+
 
 -----------------------------------------------------------------------------------------
 -- BEGINNING OF YOUR IMPLEMENTATION
@@ -53,13 +89,6 @@ function scene:createScene( event )
 	background:setReferencePoint( display.TopLeftReferencePoint )
 	background.x, background.y = 0, 0
 	
-	-- create/position logo/title image on upper-half of the screen
-	--[[titleLogo = display.newImageRect( "logobig.png", 241, 84 )
-	titleLogo:setReferencePoint( display.CenterReferencePoint )
-	titleLogo.x = display.contentWidth * 0.5
-	titleLogo.y = 100]]
-	
-	-- create a widget button (which will loads level1.lua on release)
 
 	lampsound = audio.loadSound( "abajur.mp3" )
 	lullaby = audio.loadSound( "lullaby.mp3")
@@ -85,11 +114,63 @@ function scene:createScene( event )
 		defaultFile="button_upgrades.png",
 		overFile="button_upgrades_down.png",
 		width=121, height=48,
-		onRelease = onScoreBtnRelease	-- event listener function
+		onRelease = onUpgradesBtnRelease	-- event listener function
 	}
 	upgradesBtn:setReferencePoint( display.CenterReferencePoint )
 	upgradesBtn.x = display.contentWidth*0.812
 	upgradesBtn.y = display.contentHeight*0.734
+
+	
+
+	local soundOn
+	local soundOptions
+
+	if loadTable("soundOptions.json") then
+		soundOptions = loadTable("soundOptions.json")
+		soundOn = soundOptions.isOn
+	else
+		soundOn = true
+		soundOptions = {}
+		soundOptions.isOn = soundOn
+		saveTable(soundOptions, "soundOptions.json")
+	end
+
+
+	soundBtnOn = display.newImageRect("Speaker_ON.png", 34.5, 35)
+	soundBtnOn:setReferencePoint( display.TopLeftReferencePoint )
+	soundBtnOff = display.newImageRect( "Speaker_OFF.png",37.5, 35 )
+	soundBtnOff:setReferencePoint( display.TopLeftReferencePoint )
+	soundBtnOn.x=display.contentWidth*0.01
+	soundBtnOn.y=display.contentHeight*17.4/20
+	soundBtnOff.x=display.contentWidth*0.01
+	soundBtnOff.y=display.contentHeight*17.4/20
+
+	function soundSwitch ( event )
+		if soundOn then
+			audio.fade(  { backgroundlullaby, time=1, volume=0} )
+			soundOn = false
+			soundBtnOff.isVisible = true
+			soundBtnOn.isVisible = false
+			soundOptions.isOn = false
+			saveTable(soundOptions, "soundOptions.json")
+
+		else 
+			audio.fade(  { backgroundlullaby, time=200, volume=1} )
+			soundOn = true
+			soundBtnOff.isVisible=false
+			soundBtnOn.isVisible=true
+			soundOptions.isOn = true
+			saveTable(soundOptions, "soundOptions.json")
+		end
+		return true
+	end
+	
+
+	if soundOn then
+		soundBtnOff.isVisible=false
+	else
+		soundBtnOn.isVisible=false
+	end
 
 	local lampOn = true
 
@@ -103,7 +184,7 @@ function scene:createScene( event )
 	lampBtnOff.y=display.contentHeight*2.2/7
 
 	function lampSwitch ( event )
-		audio.play( lampsound)
+		if soundOn then audio.play( lampsound ) end
 		if lampOn then
 			lampOn = false
 			lampBtnOff.isVisible = true
@@ -132,8 +213,15 @@ function scene:createScene( event )
 	group:insert (upgradesBtn)
 	group:insert( lampBtnOn )
 	group:insert( lampBtnOff )
+	group:insert (soundBtnOff)
+	group:insert( soundBtnOn)
 	lampBtnOn:toFront( )
-	function playMusic() backgroundlullaby = audio.play( lullaby, {loops=-1} ) end
+	function playMusic() 
+		backgroundlullaby = audio.play( lullaby, {loops=-1} ) 
+		if soundOn==false then
+			audio.fade(  { backgroundlullaby, time=1, volume=0} )
+		end
+	end
 	media.playVideo( "tilsix.mov", false, playMusic)	--createFood()
 end
 
@@ -145,8 +233,11 @@ function scene:enterScene( event )
 	storyboard.removeScene( "highscores")
 	lampBtnOff:addEventListener( "tap", lampSwitch )
 	lampBtnOn:addEventListener( "tap", lampSwitch )
+	soundBtnOn:addEventListener( "tap", soundSwitch )
+	soundBtnOff:addEventListener( "tap", soundSwitch )
 	playBtn:addEventListener( "tap", onPlayBtnRelease )
-	audio.fade( {backgroundlullaby, time =1200, volume = 1}  )
+	local soundOptions = loadTable("soundOptions.json")
+	if soundOptions.isOn then audio.fade( {backgroundlullaby, time =1200, volume = 1}  )end
 	
 
 	print( "taremovendo" )
@@ -165,6 +256,8 @@ function scene:exitScene( event )
 	--backgroundlullaby=nil
 	lampBtnOn:removeEventListener( "tap", lampSwitch )
 	lampBtnOff:removeEventListener( "tap", lampSwitch )
+	soundBtnOn:removeEventListener( "tap", soundSwitch )
+	soundBtnOff:removeEventListener( "tap", soundSwitch )
 	playBtn:removeEventListener( "tap", onPlayBtnRelease)
 	-- INSERT code here (e.g. stop timers, remove listenets, unload sounds, etc.)
 	

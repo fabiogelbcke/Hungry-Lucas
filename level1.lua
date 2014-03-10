@@ -245,7 +245,7 @@ local function increaseTimer( )
 		timeSinceStart = timeSinceStart+1
 		if timeSinceStart%30 == 0 then
 			
-			audio.play( coinsound )
+			if soundOn then audio.play( coinsound ) end
 			coinsQty = coinsQty +2
 			coinCounter.text = string.format("x%d",coinsQty)
 		end
@@ -343,8 +343,6 @@ function scene:createScene( event )
 	meter.x=display.contentWidth-45 
 	meter.y=display.contentHeight/8+26
 	meter:toFront()
-	barCounter = display.newText ("1/3", meter.x +7, meter.y-18, native.systemFont,14)
-	barCounter:setTextColor(0,0,0)
 	wall1 = display.newRect (-1,0,1, screenH)
 	wall2 = display.newRect (screenW+1, 0, 1, screenH)
 	decreasedTime=1
@@ -390,7 +388,6 @@ function scene:createScene( event )
     
 
 	group:insert( background )
-	group:insert( barCounter )
 	group:insert( frameJunk )
 	group:insert(frameHealthy)
 	group:insert( frameTime )
@@ -421,6 +418,14 @@ function scene:createScene( event )
 	coinsound = audio.loadSound( "smw_coin.wav")
 	swallowSound= audio.loadSound( "swallowing.mp3" )
 	fallingSound = audio.loadSound( "foodfalling.wav" )
+	local soundOptions
+	soundOn = nil
+	if loadTable("soundOptions.json") then
+
+        soundOptions=loadTable("soundOptions.json")
+		soundOn = soundOptions.isOn
+	end
+
 
 
 	function newCloud()
@@ -439,12 +444,10 @@ function scene:createScene( event )
 		timer.performWithDelay(100000, removeacloud )
 		topcloud:toFront()
 		foodCounter:toFront()
-		barCounter:toFront()
 		saladCounter:toFront()
 		group:insert(cloud)
 		frameTime:toFront( )
 		timeCounter:toFront( )
-		barCounter:toFront( )
 		meter:toFront( )
 		pauseBtn:toFront( )
 		for i=0, #meterObjects do
@@ -622,7 +625,6 @@ print("destroyScene")
 	isRunning=nil
 	isStopping=nil
 	meterObjects = nil
-	imageNames = nil
 	cloudNumber = nil
 	saladCounter = nil
 	--[[package.loaded[physics] = nil
@@ -638,7 +640,7 @@ function saladCollision( event )
 			   
 				if event.object2.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 25, 20)
-					audio.play( fallingSound )
+					if soundOn then audio.play( fallingSound ) end
 					shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object1.x
 					shadow.y=ground.y-15
@@ -650,7 +652,7 @@ function saladCollision( event )
 				event.object1:removeSelf()
 			end
 			if(event.object2.myName=="fatty")then
-				audio.play( swallowSound)
+				if soundOn then audio.play( swallowSound) end
 
 				if event.object1.tag==30 then
 					saladno = saladno+10
@@ -673,7 +675,7 @@ function saladCollision( event )
 				end
 				saladCounter.text=saladno
 				if counter ~=0 then
-					if barno ~= 4 then
+					if barno ~= 2 then
 						meterDecrease()
 						print ("meterdecrease ta sendo chamado")
 					end
@@ -683,7 +685,7 @@ function saladCollision( event )
 			if (event.object1.myName == "fatty" or event.object1.myName =="ground") then
 				if event.object1.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 30, 20)
-					audio.play( fallingSound )
+					if soundOn then audio.play( fallingSound ) end
 					--shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object2.x
 					shadow.y=event.object1.y-10
@@ -699,7 +701,7 @@ function saladCollision( event )
 				end
 			end
 			if(event.object1.myName=="fatty")then
-				audio.play( swallowSound)
+				if soundOn then audio.play( swallowSound) end
 			   if event.object2.tag==30 then
 					saladno = saladno+10
 					sizesalad = 1
@@ -722,7 +724,7 @@ function saladCollision( event )
 				end
 				saladCounter.text=saladno
 				if counter ~=0 then
-					if barno ~= 4 then
+					if barno ~= 2 then
 						meterDecrease()
 					end
 				end
@@ -771,7 +773,7 @@ local function foodCollision( event )
 				
 				if event.object2.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 25, 20)
-					audio.play( fallingSound )
+					if soundOn then audio.play( fallingSound ) end
 					shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object1.x
 					shadow.y=ground.y-15
@@ -783,13 +785,13 @@ local function foodCollision( event )
 				event.object1:removeSelf()
 			end
 			if(event.object2.myName=="fatty")then
-				audio.play( swallowSound)
+				if soundOn then audio.play( swallowSound) end
 				if counter ~= 8 then
 					increaseMeter()
 				end
 				if counter == 8 then
 					barno = barno + 1
-					if barno < 4 then
+					if barno < 2 then
 						if direction==0 then
 							fattySprite:setSequence( string.format( "left%d", 2*barno-1 ) )
 							fattySprite:play()
@@ -808,13 +810,9 @@ local function foodCollision( event )
 						end
 						counter = 0
 
-						if barno < 4 then
-							barCounter.text = string.format("%d/3", barno)
-							--meter.height = meter.height - 26
-							--meter.y=meter.y-13
-						end
+						
 					end
-				if barno==4 then
+				if barno==2 then
 					Runtime:removeEventListener( "accelerometer", urTiltFunc )
 				    Runtime:removeEventListener("collision", foodCollision)
 					congrats = display.newText("Well done!", screenW/2-90, screenH/2-45,native.systemFont,40)
@@ -836,7 +834,7 @@ local function foodCollision( event )
 			if (event.object1.myName == "fatty" or event.object1.myName =="ground") then
 				if event.object1.myName =="ground" then
 					local shadow = display.newImageRect("splash.png", 30, 20)
-					audio.play( fallingSound )
+					if soundOn then audio.play( fallingSound ) end
 					--shadow:setReferencePoint(display.TopLeftReferencePoint)
 					shadow.x=event.object2.x
 					shadow.y=event.object1.y-10
@@ -849,13 +847,13 @@ local function foodCollision( event )
 			    end
 			end
 			if(event.object1.myName=="fatty")then
-				audio.play( swallowSound)
+				if soundOn then audio.play( swallowSound) end
 				if counter ~=8 then
 					increaseMeter()
 				end
 				if counter == 8 then
 					barno = barno + 1
-					if barno < 4 then
+					if barno < 2 then
 						if direction==0 then
 							fattySprite:setSequence( string.format( "left%d", 2*barno-1) )
 							fattySprite:play()
@@ -873,13 +871,8 @@ local function foodCollision( event )
 							meterDecrease()
 						end
 						counter = 0
-						if barno < 4 then
-							barCounter.text = string.format("%d/3", barno)
-							--meter.height = meter.height - 26
-							--meter.y=meter.y-13
-						end
 				end
-				if barno==4 then
+				if barno==2 then
 					Runtime:removeEventListener( "accelerometer", urTiltFunc )
 				    Runtime:removeEventListener("collision", foodCollision)
 				    Runtime:removeEventListener("enterFrame", decreaseTime)
